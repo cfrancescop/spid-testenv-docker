@@ -1,21 +1,44 @@
-version: '2'
-
+version: '3.2'
+# you need a newer version of docker(& docker-compose) for the newer configurations
 services:
-  spid-testenv-identityserver:
-    container_name: spid-testenv-identityserver
-    build: identity-server/
-    ports:
-      - "9443:9443"
-
   spid-testenv-backoffice:
     container_name: spid-testenv-backoffice
-    build: backoffice/
+    # we build using the local Dockerfile
+    build: ./backoffice
+    # the tag image is used during the build for tagging
+    image: fe/spid-backoffice:latest
+    # change the ports if they are already binded by another application or container
     ports:
       - "8080:8080"
+    # we bind the configuration file with the local file and export the container keystore directory
     volumes:
-      - ./config.js:/spid-testenvironment/bo/backoffice/server/wso2/config.js
+      - ./config.js:/root/server/wso2/config.js
+      - "keystore:/root/certs"
     environment:
       - NODE_ENV=development
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-    depends_on:
-      - spid-testenv-identityserver
+    #depends_on:
+    #  - spid-testenv-identityserver
+  spid-testenv-identityserver:
+    container_name: spid-testenv-identityserver
+#    build: ./identity-server
+# we used directly the DockerHub image. If you need to override the build edit the dockerfile and uncomment the build directive
+    image: italia/spid-testenv-identityserver:docker-compose
+    # we mount the keystore from the spid-testenv-backoffice directly into the the container
+    volumes:
+# the wso2 data should be stored in a persistence volume
+      - "idp:/spid-testenv-identityserver/identity-server/repository/database/"
+      - type: volume
+        source: keystore
+        target: /spid-testenvironment/is/identity-server/repository/resources/security
+        volume:
+        # the image data don't have to be copied into the volume,because we are using the data from another image
+          nocopy: true
+    ports:
+      - "9443:9443"
+
+  
+# persistence & shared volumes
+volumes:
+  keystore:
+  idp:
