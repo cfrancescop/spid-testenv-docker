@@ -51,7 +51,8 @@ FROM node:8-slim
 
 WORKDIR /root/
 COPY --from=0 /spid-testenvironment/bo/backoffice .
-
+COPY config.js /root/server/wso2/config.js
+COPY idp-metadata.xml /root/public/assets/idp-metadata.xml
 # end multistage block
 
 EXPOSE 8080
